@@ -33,7 +33,7 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: "brave",
+      name: "chrome",
       use: { ...devices["Desktop Chrome"] },
     },
 
