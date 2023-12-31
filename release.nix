@@ -3,40 +3,35 @@
 }:
   let
     pkgs = (import <nixpkgs> { system = builtins.currentSystem or "x86_64-linux"; });
-    jobs = with pkgs; rec {
-      nodeModules = mkYarnPackage rec {
-        name = "node-modules";
+    jobs = with pkgs; {
+      nextjs-build = mkYarnPackage {
+        name = "NextJS-build";
         src = siteSrc;
-      };
-
-       build = stdenv.mkDerivation {
-        name = "NextJS-E2E-test";
-        system = builtins.currentSystem or "x86_64-linux";
-        src = siteSrc;
-
-        buildInputs = with pkgs;[
-          nodejs_21
-          playwright
-          yarn
-        ];
 
         configurePhase = ''
-          export HOME=$PWD
-          cp -r ${nodeModules}/libexec/nix-nextjs .
-          chmod -R +rw nix-nextjs
-          export PATH=$PWD/nix-nextjs/node_modules/.bin/:$PATH
-          export NODE_PATH=$PWD/nix-nextjs/node_modules/:$PWD/nix-nextjs/deps/nix-nextjs/node_modules:$NODE_PATH
-          yarn config --offline set yarn-offline-mirror $NODE_PATH
+          export NODE_OPTIONS=--openssl-legacy-provider
+          ln -s $node_modules node_modules
         '';
 
         buildPhase = ''
-          yarn run build
-         # yarn exec playwright test
+          runHook preBuild
+          export HOME=$(mktemp -d)
+          export PLAYWRIGHT_BROWSERS_PATH="${playwright-driver.browsers-chromium}";
+          yarn build
+          yarn exec playwright test
+          runHook postBuild
         '';
 
-        dontInstall = true;
-        PLAYWRIGHT_BROWSERS_PATH="${pkgs.playwright-driver.browsers}";
-      }; 
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out
+          mv {.,}* $out
+          runHook postInstall
+        '';
+        
+        doDist = false;
+        doCheck = false;
+      };
     };
   in
     jobs
