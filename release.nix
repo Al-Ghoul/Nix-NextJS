@@ -7,6 +7,7 @@
      build = mkYarnPackage {
         name = "NextJS-build";
         src = siteSrc;
+        __noChroot = true;
 
         configurePhase = ''
           ln -s $node_modules node_modules
@@ -14,7 +15,9 @@
 
         buildPhase = ''
           runHook preBuild
-          yarn build
+          export HOME=$(mktemp -d)
+          export NODE_TLS_REJECT_UNAUTHORIZED=0
+          yarn --offline build
           runHook postBuild
         '';
 

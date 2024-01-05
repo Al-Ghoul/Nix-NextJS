@@ -2,7 +2,7 @@
   description = "Nix-Laravel hydra build & tests";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
   };
 
   outputs = { self, nixpkgs }:
@@ -16,6 +16,7 @@
               build = with pkgs; mkYarnPackage {
                 name = "NextJS-build";
                 src = self;
+                __noChroot = true;
 
                 configurePhase = ''
                   ln -s $node_modules node_modules
@@ -23,6 +24,9 @@
 
                 buildPhase = ''
                   runHook preBuild
+                  export HOME=$(mktemp -d)
+                  export NODE_TLS_REJECT_UNAUTHORIZED=0
+                  yarn --offline build
                   runHook postBuild
                 '';
 
@@ -40,7 +44,6 @@
                 ''
                   export PLAYWRIGHT_BROWSERS_PATH="${playwright-driver.browsers-chromium}";
                   cp -r ${build}/{.,}* .
-                  yarn build
                   yarn exec playwright test
                   touch $out
                 '';
